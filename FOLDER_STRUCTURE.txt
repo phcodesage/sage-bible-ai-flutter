@@ -1,0 +1,220 @@
+SageBible Project Structure
+===========================
+
+sagebible/
+│
+├── android/                           # Android native code
+├── ios/                               # iOS native code
+├── linux/                             # Linux native code
+├── macos/                             # macOS native code
+├── web/                               # Web support files
+├── windows/                           # Windows native code
+│
+├── assets/                            # Asset files
+│   ├── images/                        # Images (logos, illustrations)
+│   │   └── .gitkeep
+│   └── icons/                         # Icons
+│       └── .gitkeep
+│
+├── lib/                               # Main application code
+│   │
+│   ├── core/                          # Core functionality (shared)
+│   │   │
+│   │   ├── constants/                 # App-wide constants
+│   │   │   └── app_constants.dart     # Keys, durations, spacing
+│   │   │
+│   │   ├── models/                    # Shared data models
+│   │   │   └── user_model.dart        # User entity
+│   │   │
+│   │   ├── router/                    # Navigation configuration
+│   │   │   └── app_router.dart        # GoRouter setup + auth guards
+│   │   │
+│   │   ├── services/                  # Core services
+│   │   │   └── storage_service.dart   # Local storage (SharedPreferences)
+│   │   │
+│   │   └── theme/                     # App theming
+│   │       └── app_theme.dart         # Colors, fonts, ThemeData
+│   │
+│   ├── features/                      # Feature modules (feature-first)
+│   │   │
+│   │   ├── auth/                      # Authentication feature
+│   │   │   ├── providers/             # State management
+│   │   │   │   └── auth_provider.dart # AuthState + AuthNotifier
+│   │   │   │
+│   │   │   ├── screens/               # UI screens
+│   │   │   │   ├── login_screen.dart  # Login page
+│   │   │   │   └── register_screen.dart # Registration page
+│   │   │   │
+│   │   │   ├── services/              # Business logic
+│   │   │   │   └── auth_service.dart  # Auth operations
+│   │   │   │
+│   │   │   └── widgets/               # Reusable widgets
+│   │   │       └── auth_text_field.dart # Custom text field
+│   │   │
+│   │   ├── splash/                    # Splash screen feature
+│   │   │   └── screens/
+│   │   │       └── splash_screen.dart # Animated splash + init
+│   │   │
+│   │   └── home/                      # Home feature
+│   │       └── screens/
+│   │           └── home_screen.dart   # Main home screen
+│   │
+│   └── main.dart                      # App entry point
+│
+├── test/                              # Unit & widget tests
+│   └── widget_test.dart
+│
+├── .gitignore                         # Git ignore rules
+├── .metadata                          # Flutter metadata
+├── analysis_options.yaml              # Linter rules
+├── pubspec.yaml                       # Dependencies
+├── pubspec.lock                       # Locked dependencies
+│
+├── README.md                          # Project overview
+├── ARCHITECTURE.md                    # Architecture documentation
+├── SETUP.md                           # Setup & deployment guide
+├── QUICK_START.md                     # Quick reference
+├── PROJECT_SUMMARY.md                 # Complete summary
+└── FOLDER_STRUCTURE.txt               # This file
+
+
+Key Principles
+==============
+
+1. Feature-First Structure
+   - Each feature is self-contained
+   - Easy to add/remove features
+   - Clear boundaries
+
+2. Core vs Features
+   - Core: Shared across features
+   - Features: Isolated functionality
+
+3. Layer Separation
+   - Screens: UI layer
+   - Providers: State layer
+   - Services: Business logic layer
+   - Models: Data layer
+
+4. Scalability
+   - Add new features in features/
+   - Extend core for shared functionality
+   - Keep features independent
+
+
+File Responsibilities
+=====================
+
+Core Layer:
+-----------
+app_constants.dart      → App-wide constants (keys, durations)
+user_model.dart         → User data structure
+app_router.dart         → Navigation + routing logic
+storage_service.dart    → Local storage wrapper
+app_theme.dart          → Theme, colors, typography
+
+Auth Feature:
+-------------
+auth_provider.dart      → Auth state management (Riverpod)
+auth_service.dart       → Auth business logic
+login_screen.dart       → Login UI
+register_screen.dart    → Registration UI
+auth_text_field.dart    → Reusable text input
+
+Splash Feature:
+---------------
+splash_screen.dart      → Animated splash + auth check
+
+Home Feature:
+-------------
+home_screen.dart        → Main home screen after login
+
+Entry Point:
+------------
+main.dart               → App initialization + Riverpod setup
+
+
+Dependencies Flow
+=================
+
+main.dart
+  ├── Initializes StorageService
+  ├── Sets up Riverpod ProviderScope
+  └── Provides GoRouter
+      │
+      ├── Watches AuthProvider
+      └── Redirects based on auth state
+          │
+          ├── Splash Screen
+          │   └── Checks auth via AuthProvider
+          │
+          ├── Login/Register Screens
+          │   └── Updates AuthProvider
+          │
+          └── Home Screen
+              └── Reads AuthProvider
+
+
+State Flow
+==========
+
+User Action
+    ↓
+AuthNotifier (Riverpod)
+    ↓
+AuthService
+    ↓
+StorageService
+    ↓
+AuthState Updated
+    ↓
+GoRouter Listens
+    ↓
+Navigation Triggered
+    ↓
+Screen Rendered
+
+
+Adding New Features
+===================
+
+1. Create folder: features/your_feature/
+2. Add subfolders: providers/, screens/, services/, widgets/
+3. Create files following existing patterns
+4. Register routes in app_router.dart
+5. Create providers if needed
+6. Implement UI in screens/
+7. Add business logic in services/
+
+
+Example: Adding Bible Reading Feature
+======================================
+
+features/bible/
+├── providers/
+│   └── bible_provider.dart      # Bible state
+├── screens/
+│   ├── bible_list_screen.dart   # List of books
+│   └── bible_read_screen.dart   # Reading view
+├── services/
+│   └── bible_service.dart       # Bible data logic
+├── models/
+│   ├── book_model.dart          # Book data
+│   └── verse_model.dart         # Verse data
+└── widgets/
+    └── verse_card.dart          # Verse display widget
+
+
+Best Practices
+==============
+
+✓ Keep features isolated
+✓ Use Riverpod for state
+✓ Document all public APIs
+✓ Follow naming conventions
+✓ Write tests for services
+✓ Keep widgets small
+✓ Use const constructors
+✓ Separate UI from logic
+✓ Handle errors gracefully
+✓ Use meaningful names

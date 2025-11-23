@@ -58,8 +58,6 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
             _currentIndex = index;
           });
         },
-        backgroundColor: AppTheme.surfaceColor,
-        indicatorColor: AppTheme.primaryColor.withOpacity(0.2),
         destinations: [
           const NavigationDestination(
             icon: Icon(Icons.menu_book_outlined),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sagebible/core/constants/app_constants.dart';
+import 'package:sagebible/core/providers/theme_provider.dart';
 import 'package:sagebible/core/router/app_router.dart';
 import 'package:sagebible/core/theme/app_theme.dart';
 import 'package:sagebible/features/auth/providers/auth_provider.dart';
@@ -24,7 +25,7 @@ class ProfileScreen extends ConsumerWidget {
       ),
       body: isAuthenticated
           ? _buildAuthenticatedProfile(context, ref, user)
-          : _buildGuestProfile(context),
+          : _buildGuestProfile(context, ref),
     );
   }
 
@@ -99,13 +100,7 @@ class ProfileScreen extends ConsumerWidget {
               'Adjust reading font size',
               () {},
             ),
-            _buildListTile(
-              context,
-              Icons.dark_mode,
-              'Dark Mode',
-              'Coming soon',
-              () {},
-            ),
+            _buildThemeToggle(context, ref),
           ],
         ),
 
@@ -151,53 +146,66 @@ class ProfileScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildGuestProfile(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(AppConstants.paddingLarge),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.person_outline,
-              size: 100,
-              color: AppTheme.textLight,
-            ),
-            const SizedBox(height: 24),
-            Text(
-              'You\'re using Guest Mode',
-              style: Theme.of(context).textTheme.headlineSmall,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Sign in to unlock AI Assistant, sync your bookmarks, and join the community',
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: AppTheme.textSecondary,
+  Widget _buildGuestProfile(BuildContext context, WidgetRef ref) {
+    return ListView(
+      padding: const EdgeInsets.all(AppConstants.paddingLarge),
+      children: [
+        // Guest mode info
+        Center(
+          child: Column(
+            children: [
+              Icon(
+                Icons.person_outline,
+                size: 100,
+                color: AppTheme.textLight,
               ),
-            ),
-            const SizedBox(height: 32),
-            SizedBox(
-              width: double.infinity,
-              height: 56,
-              child: ElevatedButton.icon(
+              const SizedBox(height: 24),
+              Text(
+                'You\'re using Guest Mode',
+                style: Theme.of(context).textTheme.headlineSmall,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Sign in to unlock AI Assistant, sync your bookmarks, and join the community',
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: AppTheme.textSecondary,
+                ),
+              ),
+              const SizedBox(height: 32),
+              SizedBox(
+                width: double.infinity,
+                height: 56,
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    context.push(AppRouter.login);
+                  },
+                  icon: const Icon(Icons.login),
+                  label: const Text('Sign In'),
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextButton(
                 onPressed: () {
-                  context.push(AppRouter.login);
+                  context.push(AppRouter.register);
                 },
-                icon: const Icon(Icons.login),
-                label: const Text('Sign In'),
+                child: const Text('Create Account'),
               ),
-            ),
-            const SizedBox(height: 12),
-            TextButton(
-              onPressed: () {
-                context.push(AppRouter.register);
-              },
-              child: const Text('Create Account'),
-            ),
+            ],
+          ),
+        ),
+
+        const SizedBox(height: 32),
+
+        // Preferences section (available for guests)
+        _buildSection(
+          context,
+          'Preferences',
+          [
+            _buildThemeToggle(context, ref),
           ],
         ),
-      ),
+      ],
     );
   }
 
@@ -239,6 +247,74 @@ class ProfileScreen extends ConsumerWidget {
       subtitle: Text(subtitle),
       trailing: const Icon(Icons.chevron_right),
       onTap: onTap,
+    );
+  }
+
+  Widget _buildThemeToggle(BuildContext context, WidgetRef ref) {
+    final isDarkMode = ref.watch(isDarkModeProvider);
+    
+    return ListTile(
+      leading: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 300),
+        transitionBuilder: (child, animation) {
+          return RotationTransition(
+            turns: animation,
+            child: FadeTransition(
+              opacity: animation,
+              child: child,
+            ),
+          );
+        },
+        child: Icon(
+          isDarkMode ? Icons.dark_mode : Icons.light_mode,
+          key: ValueKey(isDarkMode),
+          color: AppTheme.primaryColor,
+        ),
+      ),
+      title: const Text('Dark Mode'),
+      subtitle: Text(isDarkMode ? 'Enabled' : 'Disabled'),
+      trailing: AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        width: 56,
+        height: 32,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          color: isDarkMode ? AppTheme.primaryColor : Colors.grey.shade300,
+        ),
+        child: Stack(
+          children: [
+            AnimatedPositioned(
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeInOut,
+              left: isDarkMode ? 26 : 2,
+              top: 2,
+              child: Container(
+                width: 28,
+                height: 28,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.2),
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Icon(
+                  isDarkMode ? Icons.nightlight_round : Icons.wb_sunny,
+                  size: 16,
+                  color: isDarkMode ? AppTheme.primaryColor : Colors.amber,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+      onTap: () {
+        ref.read(themeModeProvider.notifier).toggleTheme();
+      },
     );
   }
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:sagebible/core/providers/theme_provider.dart';
 import 'package:sagebible/core/router/app_router.dart';
 import 'package:sagebible/core/services/storage_service.dart';
 import 'package:sagebible/core/theme/app_theme.dart';
@@ -61,6 +62,9 @@ class SageBibleApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     // Get router instance
     final router = ref.watch(goRouterProvider);
+    
+    // Watch theme mode
+    final themeMode = ref.watch(themeModeProvider);
 
     return MaterialApp.router(
       // App Configuration
@@ -69,6 +73,8 @@ class SageBibleApp extends ConsumerWidget {
 
       // Theme
       theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.darkTheme,
+      themeMode: themeMode,
 
       // Router Configuration
       routerConfig: router,

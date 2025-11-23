@@ -90,6 +90,11 @@ class AppTheme {
           fontWeight: FontWeight.w600,
           color: textPrimary,
         ),
+        titleMedium: GoogleFonts.lato(
+          fontSize: 14,
+          fontWeight: FontWeight.w600,
+          color: textPrimary,
+        ),
         bodyLarge: GoogleFonts.lato(
           fontSize: 16,
           fontWeight: FontWeight.normal,
@@ -110,6 +115,32 @@ class AppTheme {
           fontWeight: FontWeight.w600,
           color: textPrimary,
         ),
+      ),
+      
+      // Navigation Bar Theme
+      navigationBarTheme: NavigationBarThemeData(
+        backgroundColor: surfaceColor,
+        indicatorColor: primaryColor.withOpacity(0.2),
+        labelTextStyle: MaterialStateProperty.resolveWith((states) {
+          if (states.contains(MaterialState.selected)) {
+            return GoogleFonts.lato(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: primaryColor,
+            );
+          }
+          return GoogleFonts.lato(
+            fontSize: 12,
+            fontWeight: FontWeight.normal,
+            color: textSecondary,
+          );
+        }),
+        iconTheme: MaterialStateProperty.resolveWith((states) {
+          if (states.contains(MaterialState.selected)) {
+            return const IconThemeData(color: primaryColor);
+          }
+          return const IconThemeData(color: textSecondary);
+        }),
       ),
       
       // Input Decoration Theme
@@ -188,6 +219,148 @@ class AppTheme {
       // Divider Theme
       dividerTheme: const DividerThemeData(
         color: textLight,
+        thickness: 1,
+        space: 1,
+      ),
+    );
+  }
+
+  /// Dark Theme Configuration
+  static ThemeData get darkTheme {
+    // Dark mode colors
+    const darkPrimary = Color(0xFF7B9CB8); // Lighter blue-gray for dark mode
+    const darkSecondary = Color(0xFFA8BDA0); // Lighter sage green
+    const darkAccent = Color(0xFFE8C89A); // Lighter warm gold
+    const darkBackground = Color(0xFF1A1D23); // Very dark blue-gray
+    const darkSurface = Color(0xFF25282E); // Dark surface
+    const darkTextPrimary = Color(0xFFE8E9EB); // Light text
+    const darkTextSecondary = Color(0xFFB0B3B8); // Medium gray text
+    
+    return ThemeData(
+      useMaterial3: true,
+      brightness: Brightness.dark,
+      
+      // Color Scheme
+      colorScheme: const ColorScheme.dark(
+        primary: darkPrimary,
+        secondary: darkSecondary,
+        tertiary: darkAccent,
+        surface: darkSurface,
+        error: errorColor,
+        onPrimary: darkBackground,
+        onSecondary: darkBackground,
+        onSurface: darkTextPrimary,
+        onError: Colors.white,
+      ),
+      
+      // Scaffold Background
+      scaffoldBackgroundColor: darkBackground,
+      
+      // AppBar Theme
+      appBarTheme: AppBarTheme(
+        elevation: 0,
+        centerTitle: true,
+        backgroundColor: darkSurface,
+        foregroundColor: darkTextPrimary,
+        titleTextStyle: GoogleFonts.merriweather(
+          fontSize: 20,
+          fontWeight: FontWeight.w600,
+          color: darkTextPrimary,
+        ),
+      ),
+      
+      // Text Theme
+      textTheme: TextTheme(
+        displayLarge: GoogleFonts.merriweather(
+          fontSize: 32,
+          fontWeight: FontWeight.bold,
+          color: darkTextPrimary,
+        ),
+        displayMedium: GoogleFonts.merriweather(
+          fontSize: 28,
+          fontWeight: FontWeight.bold,
+          color: darkTextPrimary,
+        ),
+        displaySmall: GoogleFonts.merriweather(
+          fontSize: 24,
+          fontWeight: FontWeight.w600,
+          color: darkTextPrimary,
+        ),
+        headlineMedium: GoogleFonts.merriweather(
+          fontSize: 20,
+          fontWeight: FontWeight.w600,
+          color: darkTextPrimary,
+        ),
+        headlineSmall: GoogleFonts.merriweather(
+          fontSize: 18,
+          fontWeight: FontWeight.w600,
+          color: darkTextPrimary,
+        ),
+        titleLarge: GoogleFonts.lato(
+          fontSize: 16,
+          fontWeight: FontWeight.w600,
+          color: darkTextPrimary,
+        ),
+        titleMedium: GoogleFonts.lato(
+          fontSize: 14,
+          fontWeight: FontWeight.w600,
+          color: darkTextPrimary,
+        ),
+        bodyLarge: GoogleFonts.lato(
+          fontSize: 16,
+          fontWeight: FontWeight.normal,
+          color: darkTextPrimary,
+        ),
+        bodyMedium: GoogleFonts.lato(
+          fontSize: 14,
+          fontWeight: FontWeight.normal,
+          color: darkTextPrimary,
+        ),
+        bodySmall: GoogleFonts.lato(
+          fontSize: 12,
+          fontWeight: FontWeight.normal,
+          color: darkTextSecondary,
+        ),
+      ),
+      
+      // Navigation Bar Theme
+      navigationBarTheme: NavigationBarThemeData(
+        backgroundColor: darkSurface,
+        indicatorColor: darkPrimary.withOpacity(0.2),
+        labelTextStyle: MaterialStateProperty.resolveWith((states) {
+          if (states.contains(MaterialState.selected)) {
+            return GoogleFonts.lato(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: darkPrimary,
+            );
+          }
+          return GoogleFonts.lato(
+            fontSize: 12,
+            fontWeight: FontWeight.normal,
+            color: darkTextSecondary,
+          );
+        }),
+        iconTheme: MaterialStateProperty.resolveWith((states) {
+          if (states.contains(MaterialState.selected)) {
+            return const IconThemeData(color: darkPrimary);
+          }
+          return IconThemeData(color: darkTextSecondary);
+        }),
+      ),
+      
+      // Card Theme
+      cardTheme: const CardThemeData(
+        elevation: 2,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.all(Radius.circular(16)),
+        ),
+        color: darkSurface,
+      ),
+      
+      // Divider Theme
+      dividerTheme: const DividerThemeData(
+        color: darkTextSecondary,
         thickness: 1,
         space: 1,
       ),

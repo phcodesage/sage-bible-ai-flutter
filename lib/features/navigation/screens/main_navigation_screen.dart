@@ -4,13 +4,15 @@ import 'package:sagebible/core/theme/app_theme.dart';
 import 'package:sagebible/features/auth/providers/auth_provider.dart';
 import 'package:sagebible/features/bible/screens/bible_books_screen.dart';
 import 'package:sagebible/features/bookmarks/screens/bookmarks_screen.dart';
+import 'package:sagebible/features/search/screens/search_screen.dart';
 import 'package:sagebible/features/ai/screens/ai_assistant_screen.dart';
 import 'package:sagebible/features/profile/screens/profile_screen.dart';
 
 /// Main Navigation Screen
 /// 
-/// Bottom navigation with 4 tabs:
+/// Bottom navigation with 5 tabs:
 /// - Read Bible
+/// - Search
 /// - Bookmarks
 /// - AI Assistant (requires login)
 /// - Profile
@@ -27,6 +29,7 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
   // Navigation screens
   final List<Widget> _screens = const [
     BibleBooksScreen(),
+    SearchScreen(),
     BookmarksScreen(),
     AIAssistantScreen(),
     ProfileScreen(),
@@ -45,8 +48,8 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
       bottomNavigationBar: NavigationBar(
         selectedIndex: _currentIndex,
         onDestinationSelected: (index) {
-          // Check if trying to access AI without login
-          if (index == 2 && !isAuthenticated) {
+          // Check if trying to access AI without login (AI is now at index 3)
+          if (index == 3 && !isAuthenticated) {
             _showLoginRequiredDialog();
             return;
           }
@@ -62,6 +65,11 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
             icon: Icon(Icons.menu_book_outlined),
             selectedIcon: Icon(Icons.menu_book_rounded),
             label: 'Read',
+          ),
+          const NavigationDestination(
+            icon: Icon(Icons.search_outlined),
+            selectedIcon: Icon(Icons.search_rounded),
+            label: 'Search',
           ),
           const NavigationDestination(
             icon: Icon(Icons.bookmark_outline),

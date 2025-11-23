@@ -101,7 +101,7 @@ class BibleNotifier extends StateNotifier<BibleState> {
     return _repository.getChapterContent(state.data!, bookName, chapterNumber);
   }
 
-  /// Search verses
+  /// Search for verses containing the query
   List<SearchResult> search(String query) {
     if (state.data == null) return [];
     return _repository.search(state.data!, query);

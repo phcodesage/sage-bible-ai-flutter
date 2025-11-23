@@ -13,11 +13,13 @@ import 'package:sagebible/features/annotations/providers/annotations_provider.da
 class BibleReaderScreen extends ConsumerStatefulWidget {
   final String bookName;
   final int chapterNumber;
+  final int? highlightVerse; // Optional verse to scroll to and highlight
 
   const BibleReaderScreen({
     super.key,
     required this.bookName,
     required this.chapterNumber,
+    this.highlightVerse,
   });
 
   @override
@@ -30,12 +32,45 @@ class _BibleReaderScreenState extends ConsumerState<BibleReaderScreen> {
   late int _currentChapter;
   late String _currentBook;
   final ScrollController _scrollController = ScrollController();
+  int? _highlightedVerse; // Verse to highlight from search
+  final Map<int, GlobalKey> _verseKeys = {}; // Keys for each verse
 
   @override
   void initState() {
     super.initState();
     _currentChapter = widget.chapterNumber;
     _currentBook = widget.bookName;
+    _highlightedVerse = widget.highlightVerse;
+    
+    // Scroll to highlighted verse after build
+    if (widget.highlightVerse != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _scrollToVerse(widget.highlightVerse!);
+      });
+    }
+  }
+
+  @override
+  void didUpdateWidget(BibleReaderScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    
+    // Check if we navigated to a different chapter/book with a new highlight
+    if (widget.highlightVerse != null &&
+        (widget.highlightVerse != oldWidget.highlightVerse ||
+         widget.chapterNumber != oldWidget.chapterNumber ||
+         widget.bookName != oldWidget.bookName)) {
+      
+      // Update state
+      _currentChapter = widget.chapterNumber;
+      _currentBook = widget.bookName;
+      _highlightedVerse = widget.highlightVerse;
+      _verseKeys.clear(); // Clear old keys
+      
+      // Scroll to new verse
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _scrollToVerse(widget.highlightVerse!);
+      });
+    }
   }
 
   @override
@@ -52,6 +87,71 @@ class _BibleReaderScreenState extends ConsumerState<BibleReaderScreen> {
         curve: Curves.easeOut,
       );
     }
+  }
+
+  void _scrollToVerse(int verseNumber) {
+    // Use a more aggressive approach: scroll to approximate position multiple times
+    // to force ListView to build the items
+    Future.delayed(const Duration(milliseconds: 150), () {
+      if (!_scrollController.hasClients) return;
+      
+      // Estimate: each verse is roughly 100-200 pixels depending on text length
+      // Use 150 as a reasonable average
+      final estimatedPosition = (verseNumber - 1) * 150.0;
+      final maxScroll = _scrollController.position.maxScrollExtent;
+      
+      // First scroll: jump to approximate position
+      _scrollController.jumpTo(
+        estimatedPosition.clamp(0.0, maxScroll),
+      );
+      
+      // Second attempt: after ListView builds more items
+      Future.delayed(const Duration(milliseconds: 200), () {
+        if (!mounted || !_scrollController.hasClients) return;
+        
+        final key = _verseKeys[verseNumber];
+        if (key?.currentContext != null) {
+          // Fine-tune with ensureVisible
+          Scrollable.ensureVisible(
+            key!.currentContext!,
+            duration: const Duration(milliseconds: 400),
+            curve: Curves.easeInOut,
+            alignment: 0.15,
+          );
+        } else {
+          // If key still not available, try scrolling a bit more
+          final newEstimate = (verseNumber - 1) * 140.0;
+          _scrollController.animateTo(
+            newEstimate.clamp(0.0, _scrollController.position.maxScrollExtent),
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeOut,
+          );
+          
+          // Third attempt
+          Future.delayed(const Duration(milliseconds: 400), () {
+            if (!mounted) return;
+            final key = _verseKeys[verseNumber];
+            if (key?.currentContext != null) {
+              Scrollable.ensureVisible(
+                key!.currentContext!,
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeInOut,
+                alignment: 0.15,
+              );
+            }
+          });
+        }
+      });
+      
+      // Clear highlight after 4 seconds
+      Future.delayed(const Duration(seconds: 4), () {
+        if (mounted) {
+          setState(() {
+            _highlightedVerse = null;
+          });
+        }
+      });
+    });
   }
 
   void _goToNextChapter() {
@@ -448,6 +548,10 @@ class _BibleReaderScreenState extends ConsumerState<BibleReaderScreen> {
                 itemBuilder: (context, index) {
                   final verse = chapter.verses[index];
                   final isSelected = _selectedVerse == verse.verse;
+                  final isHighlighted = _highlightedVerse == verse.verse;
+                  
+                  // Create or get key for this verse
+                  _verseKeys.putIfAbsent(verse.verse, () => GlobalKey());
                   
                   // Get annotations for this verse
                   final verseRef = VerseReference(
@@ -460,23 +564,38 @@ class _BibleReaderScreenState extends ConsumerState<BibleReaderScreen> {
                   final hasNote = ref.read(annotationsProvider.notifier).getNote(verseRef) != null;
 
                   return GestureDetector(
+                    key: _verseKeys[verse.verse],
                     onTap: () {
                       setState(() {
                         _selectedVerse = isSelected ? null : verse.verse;
                       });
                     },
-                    child: Container(
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 300),
                       margin: const EdgeInsets.only(bottom: 16),
                       padding: const EdgeInsets.all(AppConstants.paddingMedium),
                       decoration: BoxDecoration(
-                        color: isSelected
-                            ? AppTheme.primaryColor.withOpacity(0.1)
-                            : highlight != null
-                                ? Color(highlight.color.colorValue)
-                                : Colors.transparent,
+                        color: isHighlighted
+                            ? AppTheme.accentColor.withOpacity(0.3)
+                            : isSelected
+                                ? AppTheme.primaryColor.withOpacity(0.1)
+                                : highlight != null
+                                    ? Color(highlight.color.colorValue)
+                                    : Colors.transparent,
                         borderRadius: BorderRadius.circular(AppConstants.radiusMedium),
-                        border: isBookmarked
-                            ? Border.all(color: AppTheme.accentColor, width: 2)
+                        border: isHighlighted
+                            ? Border.all(color: AppTheme.accentColor, width: 3)
+                            : isBookmarked
+                                ? Border.all(color: AppTheme.accentColor, width: 2)
+                                : null,
+                        boxShadow: isHighlighted
+                            ? [
+                                BoxShadow(
+                                  color: AppTheme.accentColor.withOpacity(0.4),
+                                  blurRadius: 8,
+                                  spreadRadius: 2,
+                                ),
+                              ]
                             : null,
                       ),
                       child: Row(

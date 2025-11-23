@@ -11,6 +11,7 @@ class AppConstants {
   static const String keyUserEmail = 'user_email';
   static const String keyUserId = 'user_id';
   static const String keyUserName = 'user_name';
+  static const String keyUserAvatar = 'user_avatar';
   static const String keyOnboardingCompleted = 'onboarding_completed';
   
   // Animation Durations

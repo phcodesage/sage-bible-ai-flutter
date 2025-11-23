@@ -35,6 +35,9 @@ class AuthService {
     final user = _supabase.auth.currentUser;
     if (user == null) return null;
 
+    // Try to get avatar from local storage first (for offline support)
+    final cachedAvatar = await _storageService.getString(AppConstants.keyUserAvatar);
+    
     return UserModel(
       id: user.id,
       email: user.email ?? '',
@@ -43,7 +46,8 @@ class AuthService {
             user.email?.split('@')[0] ?? 
             'User',
       avatarUrl: user.userMetadata?['avatar_url'] ?? 
-                 user.userMetadata?['picture'],
+                 user.userMetadata?['picture'] ??
+                 cachedAvatar,
       createdAt: DateTime.tryParse(user.createdAt),
     );
   }
@@ -219,6 +223,9 @@ class AuthService {
     await _storageService.setString(AppConstants.keyUserId, userModel.id);
     await _storageService.setString(AppConstants.keyUserEmail, userModel.email);
     await _storageService.setString(AppConstants.keyUserName, userModel.name);
+    if (userModel.avatarUrl != null) {
+      await _storageService.setString(AppConstants.keyUserAvatar, userModel.avatarUrl!);
+    }
 
     return userModel;
   }
@@ -261,6 +268,9 @@ class AuthService {
     await _storageService.setString(AppConstants.keyUserId, userModel.id);
     await _storageService.setString(AppConstants.keyUserEmail, userModel.email);
     await _storageService.setString(AppConstants.keyUserName, userModel.name);
+    if (userModel.avatarUrl != null) {
+      await _storageService.setString(AppConstants.keyUserAvatar, userModel.avatarUrl!);
+    }
 
     return userModel;
   }

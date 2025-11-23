@@ -584,24 +584,42 @@ class _BibleReaderScreenState extends ConsumerState<BibleReaderScreen> {
                       padding: const EdgeInsets.all(AppConstants.paddingMedium),
                       decoration: BoxDecoration(
                         color: isHighlighted
-                            ? AppTheme.accentColor.withOpacity(0.3)
+                            ? Theme.of(context).brightness == Brightness.dark
+                                ? AppTheme.accentColor.withOpacity(0.2)
+                                : AppTheme.accentColor.withOpacity(0.3)
                             : isSelected
-                                ? AppTheme.primaryColor.withOpacity(0.1)
+                                ? Theme.of(context).brightness == Brightness.dark
+                                    ? AppTheme.primaryColor.withOpacity(0.15)
+                                    : AppTheme.primaryColor.withOpacity(0.1)
                                 : highlight != null
-                                    ? Color(highlight.color.colorValue)
+                                    ? Theme.of(context).brightness == Brightness.dark
+                                        ? Color(highlight.color.colorValue).withOpacity(0.25)
+                                        : Color(highlight.color.colorValue).withOpacity(0.4)
                                     : Colors.transparent,
                         borderRadius: BorderRadius.circular(AppConstants.radiusMedium),
                         border: isHighlighted
-                            ? Border.all(color: AppTheme.accentColor, width: 3)
+                            ? Border.all(
+                                color: Theme.of(context).brightness == Brightness.dark
+                                    ? AppTheme.accentColor.withOpacity(0.8)
+                                    : AppTheme.accentColor,
+                                width: 2,
+                              )
                             : isBookmarked
-                                ? Border.all(color: AppTheme.accentColor, width: 2)
+                                ? Border.all(
+                                    color: Theme.of(context).brightness == Brightness.dark
+                                        ? AppTheme.accentColor.withOpacity(0.6)
+                                        : AppTheme.accentColor,
+                                    width: 2,
+                                  )
                                 : null,
                         boxShadow: isHighlighted
                             ? [
                                 BoxShadow(
-                                  color: AppTheme.accentColor.withOpacity(0.4),
+                                  color: Theme.of(context).brightness == Brightness.dark
+                                      ? AppTheme.accentColor.withOpacity(0.2)
+                                      : AppTheme.accentColor.withOpacity(0.4),
                                   blurRadius: 8,
-                                  spreadRadius: 2,
+                                  spreadRadius: 1,
                                 ),
                               ]
                             : null,

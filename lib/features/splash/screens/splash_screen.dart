@@ -64,12 +64,18 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // App Logo - Your Custom Icon
+            // App Logo - Your Custom Icon (Responsive)
             Container(
-              width: 120,
-              height: 120,
+              width: MediaQuery.of(context).size.width * 0.25,
+              height: MediaQuery.of(context).size.width * 0.25,
+              constraints: const BoxConstraints(
+                minWidth: 80,
+                minHeight: 80,
+                maxWidth: 120,
+                maxHeight: 120,
+              ),
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(24),
+                borderRadius: BorderRadius.circular(20),
                 boxShadow: [
                   BoxShadow(
                     color: AppTheme.primaryColor.withOpacity(0.2),
@@ -79,12 +85,10 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
                 ],
               ),
               child: ClipRRect(
-                borderRadius: BorderRadius.circular(24),
+                borderRadius: BorderRadius.circular(20),
                 child: Image.asset(
                   'assets/icon.png',
-                  width: 120,
-                  height: 120,
-                  fit: BoxFit.cover,
+                  fit: BoxFit.contain,
                   errorBuilder: (context, error, stackTrace) {
                     // Fallback to icon if image fails to load
                     return Container(

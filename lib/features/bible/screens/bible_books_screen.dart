@@ -203,9 +203,10 @@ class BibleBooksScreen extends ConsumerWidget {
           physics: const NeverScrollableScrollPhysics(),
           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 2,
-            childAspectRatio: 3,
+            childAspectRatio: 2.5,
             crossAxisSpacing: 12,
             mainAxisSpacing: 12,
+            mainAxisExtent: 60, // Fixed height for consistent display
           ),
           itemCount: books.length,
           itemBuilder: (context, index) {
@@ -228,10 +229,9 @@ class BibleBooksScreen extends ConsumerWidget {
       ),
       child: InkWell(
         onTap: () {
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (context) => BibleChaptersScreen(bookName: bookName),
-            ),
+          Navigator.of(context).pushNamed(
+            '/chapters',
+            arguments: bookName,
           );
         },
         borderRadius: BorderRadius.circular(AppConstants.radiusMedium),

@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sagebible/core/theme/app_theme.dart';
 import 'package:sagebible/features/auth/providers/auth_provider.dart';
 import 'package:sagebible/features/daily_verse/screens/daily_verse_screen.dart';
-import 'package:sagebible/features/bible/screens/bible_books_screen.dart';
+import 'package:sagebible/features/bible/screens/bible_navigation_screen.dart';
 import 'package:sagebible/features/bookmarks/screens/bookmarks_screen.dart';
 import 'package:sagebible/features/search/screens/search_screen.dart';
 import 'package:sagebible/features/ai/screens/ai_assistant_screen.dart';
@@ -31,7 +31,7 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
   // Navigation screens
   final List<Widget> _screens = const [
     DailyVerseScreen(),
-    BibleBooksScreen(),
+    BibleNavigationScreen(), // Nested navigator for Bible tab
     SearchScreen(),
     BookmarksScreen(),
     AIAssistantScreen(),
@@ -50,6 +50,8 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
       ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _currentIndex,
+        labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+        height: 64, // Compact height for small screens
         onDestinationSelected: (index) {
           // Check if trying to access AI without login (AI is now at index 4)
           if (index == 4 && !isAuthenticated) {

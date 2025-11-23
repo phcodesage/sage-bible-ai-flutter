@@ -55,13 +55,12 @@ class BibleChaptersScreen extends ConsumerWidget {
       ),
       child: InkWell(
         onTap: () {
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (context) => BibleReaderScreen(
-                bookName: bookName,
-                chapterNumber: chapterNumber,
-              ),
-            ),
+          Navigator.of(context).pushNamed(
+            '/reader',
+            arguments: {
+              'bookName': bookName,
+              'chapter': chapterNumber,
+            },
           );
         },
         borderRadius: BorderRadius.circular(AppConstants.radiusMedium),

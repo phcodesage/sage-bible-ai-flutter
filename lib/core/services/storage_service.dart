@@ -62,4 +62,7 @@ class StorageService {
   bool containsKey(String key) {
     return _preferences!.containsKey(key);
   }
+
+  /// Get SharedPreferences instance (for advanced usage)
+  SharedPreferences get prefs => _preferences!;
 }

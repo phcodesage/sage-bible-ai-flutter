@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sagebible/core/constants/app_constants.dart';
 import 'package:sagebible/core/theme/app_theme.dart';
+import 'package:sagebible/features/annotations/providers/annotations_provider.dart';
+import 'package:sagebible/features/bible/screens/bible_reader_screen.dart';
 
 /// Bookmarks Screen
 /// 
@@ -12,12 +14,44 @@ class BookmarksScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // TODO: Implement bookmarks provider
-    final bookmarks = <String>[]; // Placeholder
+    final bookmarks = ref.watch(bookmarksListProvider);
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Bookmarks'),
+        actions: [
+          if (bookmarks.isNotEmpty)
+            IconButton(
+              icon: const Icon(Icons.delete_outline),
+              tooltip: 'Clear all',
+              onPressed: () async {
+                final confirm = await showDialog<bool>(
+                  context: context,
+                  builder: (context) => AlertDialog(
+                    title: const Text('Clear All Bookmarks'),
+                    content: const Text('Are you sure you want to remove all bookmarks?'),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.of(context).pop(false),
+                        child: const Text('Cancel'),
+                      ),
+                      TextButton(
+                        onPressed: () => Navigator.of(context).pop(true),
+                        child: const Text('Clear'),
+                      ),
+                    ],
+                  ),
+                );
+                
+                if (confirm == true) {
+                  final allBookmarks = ref.read(bookmarksListProvider);
+                  for (final bookmark in allBookmarks) {
+                    await ref.read(annotationsProvider.notifier).removeBookmark(bookmark.reference);
+                  }
+                }
+              },
+            ),
+        ],
       ),
       body: bookmarks.isEmpty
           ? Center(
@@ -52,14 +86,48 @@ class BookmarksScreen extends ConsumerWidget {
               padding: const EdgeInsets.all(AppConstants.paddingMedium),
               itemCount: bookmarks.length,
               itemBuilder: (context, index) {
+                final bookmark = bookmarks[index];
                 return Card(
+                  margin: const EdgeInsets.only(bottom: 12),
                   child: ListTile(
                     leading: Icon(
                       Icons.bookmark,
-                      color: AppTheme.primaryColor,
+                      color: AppTheme.accentColor,
                     ),
-                    title: Text('Bookmark ${index + 1}'),
-                    subtitle: const Text('Coming soon...'),
+                    title: Text(
+                      bookmark.reference.reference,
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    subtitle: Text(
+                      bookmark.verseText,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    trailing: IconButton(
+                      icon: const Icon(Icons.delete_outline),
+                      onPressed: () async {
+                        await ref.read(annotationsProvider.notifier)
+                            .removeBookmark(bookmark.reference);
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Bookmark removed'),
+                              duration: Duration(seconds: 1),
+                            ),
+                          );
+                        }
+                      },
+                    ),
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => BibleReaderScreen(
+                            bookName: bookmark.reference.bookName,
+                            chapterNumber: bookmark.reference.chapter,
+                          ),
+                        ),
+                      );
+                    },
                   ),
                 );
               },

@@ -1,0 +1,13 @@
+📍 PLACE YOUR APP ICON HERE
+
+Save your icon as: icon.png
+
+Requirements:
+- Size: 1024x1024 pixels (recommended)
+- Format: PNG with transparency
+- Name: icon.png
+
+After placing the icon, run:
+flutter pub run flutter_launcher_icons
+
+This will generate icons for all platforms automatically!

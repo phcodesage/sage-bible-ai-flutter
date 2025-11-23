@@ -69,6 +69,12 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
+  
+  # Flutter Launcher Icons - Generate app icons for all platforms
+  flutter_launcher_icons: ^0.13.1
+  
+  # Flutter Native Splash - Generate native splash screens
+  flutter_native_splash: ^2.4.0
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -109,3 +115,66 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
+
+# Flutter Launcher Icons Configuration
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/icon.png"
+  min_sdk_android: 21
+  
+  # Android adaptive icon (optional - for Android 8.0+)
+  adaptive_icon_background: "#5B7C99"  # Your blue-gray color
+  adaptive_icon_foreground: "assets/icon.png"
+  
+  # Web
+  web:
+    generate: true
+    image_path: "assets/icon.png"
+    background_color: "#5B7C99"
+    theme_color: "#5B7C99"
+  
+  # Windows
+  windows:
+    generate: true
+    image_path: "assets/icon.png"
+    icon_size: 48
+  
+  # macOS
+  macos:
+    generate: true
+    image_path: "assets/icon.png"
+
+# Flutter Native Splash Configuration
+flutter_native_splash:
+  # Background color (your blue-gray)
+  color: "#5B7C99"
+  
+  # Splash image (your icon)
+  image: assets/icon.png
+  
+  # Branding image (optional - shows at bottom)
+  # branding: assets/branding.png
+  
+  # Color for dark mode
+  color_dark: "#1E1E1E"
+  image_dark: assets/icon.png
+  
+  # Android 12+ specific settings
+  android_12:
+    image: assets/icon.png
+    color: "#5B7C99"
+    image_dark: assets/icon.png
+    color_dark: "#1E1E1E"
+  
+  # Web settings
+  web: true
+  
+  # iOS settings
+  ios: true
+  
+  # Android settings
+  android: true
+  
+  # Fullscreen mode
+  fullscreen: true

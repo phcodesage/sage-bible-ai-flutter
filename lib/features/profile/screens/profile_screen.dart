@@ -40,12 +40,17 @@ class ProfileScreen extends ConsumerWidget {
               CircleAvatar(
                 radius: 50,
                 backgroundColor: AppTheme.primaryColor.withOpacity(0.1),
-                child: Text(
-                  user?.name.substring(0, 1).toUpperCase() ?? 'U',
-                  style: Theme.of(context).textTheme.displayMedium?.copyWith(
-                    color: AppTheme.primaryColor,
-                  ),
-                ),
+                backgroundImage: user?.avatarUrl != null
+                    ? NetworkImage(user!.avatarUrl!)
+                    : null,
+                child: user?.avatarUrl == null
+                    ? Text(
+                        user?.name.substring(0, 1).toUpperCase() ?? 'U',
+                        style: Theme.of(context).textTheme.displayMedium?.copyWith(
+                          color: AppTheme.primaryColor,
+                        ),
+                      )
+                    : null,
               ),
               const SizedBox(height: 16),
               Text(
@@ -75,14 +80,28 @@ class ProfileScreen extends ConsumerWidget {
               Icons.history,
               'Reading History',
               'View your reading progress',
-              () {},
+              () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Reading History feature coming soon!'),
+                    duration: Duration(seconds: 2),
+                  ),
+                );
+              },
             ),
             _buildListTile(
               context,
               Icons.calendar_today,
               'Reading Plans',
               'Follow structured reading plans',
-              () {},
+              () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Reading Plans feature coming soon!'),
+                    duration: Duration(seconds: 2),
+                  ),
+                );
+              },
             ),
           ],
         ),
@@ -98,7 +117,12 @@ class ProfileScreen extends ConsumerWidget {
               Icons.text_fields,
               'Font Size',
               'Adjust reading font size',
-              () {},
+              () {
+                showDialog(
+                  context: context,
+                  builder: (context) => _FontSizeDialog(),
+                );
+              },
             ),
             _buildThemeToggle(context, ref),
           ],
@@ -315,6 +339,73 @@ class ProfileScreen extends ConsumerWidget {
       onTap: () {
         ref.read(themeModeProvider.notifier).toggleTheme();
       },
+    );
+  }
+}
+
+/// Font Size Dialog
+class _FontSizeDialog extends StatefulWidget {
+  @override
+  State<_FontSizeDialog> createState() => _FontSizeDialogState();
+}
+
+class _FontSizeDialogState extends State<_FontSizeDialog> {
+  double _fontSize = 16.0;
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Font Size'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            'The quick brown fox jumps over the lazy dog',
+            style: TextStyle(fontSize: _fontSize),
+          ),
+          const SizedBox(height: 24),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text('Small'),
+              Expanded(
+                child: Slider(
+                  value: _fontSize,
+                  min: 12.0,
+                  max: 24.0,
+                  divisions: 12,
+                  label: _fontSize.round().toString(),
+                  onChanged: (value) {
+                    setState(() {
+                      _fontSize = value;
+                    });
+                  },
+                ),
+              ),
+              const Text('Large'),
+            ],
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancel'),
+        ),
+        ElevatedButton(
+          onPressed: () {
+            // TODO: Save font size preference
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Font size set to ${_fontSize.round()}'),
+                duration: const Duration(seconds: 2),
+              ),
+            );
+            Navigator.of(context).pop();
+          },
+          child: const Text('Apply'),
+        ),
+      ],
     );
   }
 }

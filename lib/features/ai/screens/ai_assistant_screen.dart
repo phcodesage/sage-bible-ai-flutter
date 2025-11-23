@@ -94,7 +94,7 @@ class _AIAssistantScreenState extends ConsumerState<AIAssistantScreen> {
                       Icon(
                         Icons.psychology_rounded,
                         size: 80,
-                        color: AppTheme.primaryColor,
+                        color: Theme.of(context).colorScheme.primary,
                       ),
                       const SizedBox(height: 24),
                       Text(
@@ -106,7 +106,7 @@ class _AIAssistantScreenState extends ConsumerState<AIAssistantScreen> {
                         'Ask me anything about the Bible',
                         textAlign: TextAlign.center,
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: AppTheme.textSecondary,
+                          color: Theme.of(context).textTheme.bodySmall?.color,
                         ),
                       ),
                       const SizedBox(height: 24),
@@ -141,10 +141,10 @@ class _AIAssistantScreenState extends ConsumerState<AIAssistantScreen> {
           Container(
             padding: const EdgeInsets.all(AppConstants.paddingMedium),
             decoration: BoxDecoration(
-              color: AppTheme.surfaceColor,
+              color: Theme.of(context).scaffoldBackgroundColor,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
+                  color: Colors.black.withOpacity(0.1),
                   blurRadius: 10,
                   offset: const Offset(0, -2),
                 ),
@@ -155,10 +155,21 @@ class _AIAssistantScreenState extends ConsumerState<AIAssistantScreen> {
                 Expanded(
                   child: TextField(
                     controller: _messageController,
+                    style: TextStyle(
+                      color: Theme.of(context).textTheme.bodyLarge?.color,
+                    ),
                     decoration: InputDecoration(
                       hintText: 'Ask a question...',
+                      hintStyle: TextStyle(
+                        color: Theme.of(context).textTheme.bodySmall?.color,
+                      ),
+                      filled: true,
+                      fillColor: Theme.of(context).brightness == Brightness.dark
+                          ? Colors.grey[800]
+                          : Colors.grey[100],
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(24),
+                        borderSide: BorderSide.none,
                       ),
                       contentPadding: const EdgeInsets.symmetric(
                         horizontal: 20,
@@ -203,14 +214,18 @@ class _AIAssistantScreenState extends ConsumerState<AIAssistantScreen> {
         ),
         decoration: BoxDecoration(
           color: message.isUser
-              ? AppTheme.primaryColor
-              : AppTheme.secondaryColor.withOpacity(0.2),
+              ? Theme.of(context).colorScheme.primary
+              : Theme.of(context).brightness == Brightness.dark
+                  ? Colors.grey[800]
+                  : Colors.grey[200],
           borderRadius: BorderRadius.circular(AppConstants.radiusMedium),
         ),
         child: Text(
           message.text,
           style: TextStyle(
-            color: message.isUser ? Colors.white : AppTheme.textPrimary,
+            color: message.isUser 
+                ? Colors.white 
+                : Theme.of(context).textTheme.bodyLarge?.color,
           ),
         ),
       ),

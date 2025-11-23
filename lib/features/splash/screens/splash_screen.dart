@@ -59,31 +59,45 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // App Logo Container with subtle shadow
+            // App Logo - Your Custom Icon
             Container(
               width: 120,
               height: 120,
               decoration: BoxDecoration(
-                color: AppTheme.surfaceColor,
                 borderRadius: BorderRadius.circular(24),
                 boxShadow: [
                   BoxShadow(
-                    color: AppTheme.primaryColor.withOpacity(0.1),
+                    color: AppTheme.primaryColor.withOpacity(0.2),
                     blurRadius: 20,
                     offset: const Offset(0, 10),
                   ),
                 ],
               ),
-              child: Center(
-                child: Icon(
-                  Icons.menu_book_rounded,
-                  size: 60,
-                  color: AppTheme.primaryColor,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(24),
+                child: Image.asset(
+                  'assets/icon.png',
+                  width: 120,
+                  height: 120,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) {
+                    // Fallback to icon if image fails to load
+                    return Container(
+                      color: AppTheme.surfaceColor,
+                      child: Center(
+                        child: Icon(
+                          Icons.menu_book_rounded,
+                          size: 60,
+                          color: AppTheme.primaryColor,
+                        ),
+                      ),
+                    );
+                  },
                 ),
               ),
             )

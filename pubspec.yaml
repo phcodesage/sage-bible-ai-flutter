@@ -49,6 +49,15 @@ dependencies:
   
   # Google Fonts for beautiful typography
   google_fonts: ^6.2.1
+  
+  # Google Sign-In
+  google_sign_in: ^6.2.1
+  
+  # Font Awesome Icons for Google icon
+  font_awesome_flutter: ^10.7.0
+  
+  # Supabase - Backend as a Service
+  supabase_flutter: ^2.8.0
 
 dev_dependencies:
   flutter_test:

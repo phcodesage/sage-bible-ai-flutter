@@ -1,123 +1,288 @@
+import 'dart:io';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:sagebible/core/config/google_config.dart';
 import 'package:sagebible/core/constants/app_constants.dart';
 import 'package:sagebible/core/models/user_model.dart';
 import 'package:sagebible/core/services/storage_service.dart';
+import 'package:sagebible/core/services/supabase_service.dart';
 
 /// Authentication Service
 /// 
-/// Handles all authentication operations.
-/// In production, this would integrate with Firebase Auth, Supabase, or your backend API.
-/// For now, it simulates authentication with local storage.
+/// Handles all authentication operations using Supabase.
+/// Uses native Google Sign-In for mobile, OAuth for web.
 class AuthService {
   final StorageService _storageService;
+  final SupabaseClient _supabase = SupabaseService.client;
+  
+  // Google Sign-In for native mobile apps (Android/iOS)
+  // serverClientId is the Web Client ID from Google Cloud Console
+  final GoogleSignIn _googleSignIn = GoogleSignIn(
+    serverClientId: GoogleConfig.webClientId,
+  );
 
   AuthService(this._storageService);
 
   /// Check if user is currently authenticated
   Future<bool> isAuthenticated() async {
-    return _storageService.getBool(AppConstants.keyIsLoggedIn) ?? false;
+    final session = _supabase.auth.currentSession;
+    return session != null;
   }
 
-  /// Get current user from storage
+  /// Get current user from Supabase
   Future<UserModel?> getCurrentUser() async {
-    final isLoggedIn = await isAuthenticated();
-    if (!isLoggedIn) return null;
-
-    final userId = _storageService.getString(AppConstants.keyUserId);
-    final email = _storageService.getString(AppConstants.keyUserEmail);
-    final name = _storageService.getString(AppConstants.keyUserName);
-
-    if (userId == null || email == null || name == null) {
-      return null;
-    }
+    final user = _supabase.auth.currentUser;
+    if (user == null) return null;
 
     return UserModel(
-      id: userId,
-      email: email,
-      name: name,
-      createdAt: DateTime.now(),
+      id: user.id,
+      email: user.email ?? '',
+      name: user.userMetadata?['full_name'] ?? 
+            user.userMetadata?['name'] ?? 
+            user.email?.split('@')[0] ?? 
+            'User',
+      avatarUrl: user.userMetadata?['avatar_url'] ?? 
+                 user.userMetadata?['picture'],
+      createdAt: DateTime.tryParse(user.createdAt),
     );
   }
 
-  /// Login with email and password
-  /// 
-  /// In production, this would make an API call to your backend.
-  /// For demo purposes, it accepts any email/password combination.
+  /// Login with email and password using Supabase
   Future<UserModel> login(String email, String password) async {
-    // Simulate network delay
-    await Future.delayed(const Duration(seconds: 1));
+    try {
+      // Basic validation
+      if (email.isEmpty || password.isEmpty) {
+        throw Exception('Email and password are required');
+      }
 
-    // Basic validation
-    if (email.isEmpty || password.isEmpty) {
-      throw Exception('Email and password are required');
+      if (!email.contains('@')) {
+        throw Exception('Invalid email format');
+      }
+
+      if (password.length < 6) {
+        throw Exception('Password must be at least 6 characters');
+      }
+
+      // Sign in with Supabase
+      final response = await _supabase.auth.signInWithPassword(
+        email: email,
+        password: password,
+      );
+
+      if (response.user == null) {
+        throw Exception('Login failed');
+      }
+
+      final user = UserModel(
+        id: response.user!.id,
+        email: response.user!.email ?? email,
+        name: response.user!.userMetadata?['full_name'] ?? email.split('@')[0],
+        createdAt: DateTime.tryParse(response.user!.createdAt),
+      );
+
+      // Save to local storage for offline access
+      await _storageService.setBool(AppConstants.keyIsLoggedIn, true);
+      await _storageService.setString(AppConstants.keyUserId, user.id);
+      await _storageService.setString(AppConstants.keyUserEmail, user.email);
+      await _storageService.setString(AppConstants.keyUserName, user.name);
+
+      return user;
+    } on AuthException catch (e) {
+      throw Exception(e.message);
+    } catch (e) {
+      throw Exception('Login failed: ${e.toString()}');
     }
-
-    if (!email.contains('@')) {
-      throw Exception('Invalid email format');
-    }
-
-    if (password.length < 6) {
-      throw Exception('Password must be at least 6 characters');
-    }
-
-    // Create user (in production, this would come from your backend)
-    final user = UserModel(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      email: email,
-      name: email.split('@')[0], // Use email prefix as name
-      createdAt: DateTime.now(),
-    );
-
-    // Save to storage
-    await _storageService.setBool(AppConstants.keyIsLoggedIn, true);
-    await _storageService.setString(AppConstants.keyUserId, user.id);
-    await _storageService.setString(AppConstants.keyUserEmail, user.email);
-    await _storageService.setString(AppConstants.keyUserName, user.name);
-
-    return user;
   }
 
-  /// Register a new user
-  /// 
-  /// In production, this would create a new user in your backend.
+  /// Register a new user with Supabase
   Future<UserModel> register(String name, String email, String password) async {
-    // Simulate network delay
-    await Future.delayed(const Duration(seconds: 1));
+    try {
+      // Basic validation
+      if (name.isEmpty || email.isEmpty || password.isEmpty) {
+        throw Exception('All fields are required');
+      }
 
-    // Basic validation
-    if (name.isEmpty || email.isEmpty || password.isEmpty) {
-      throw Exception('All fields are required');
+      if (!email.contains('@')) {
+        throw Exception('Invalid email format');
+      }
+
+      if (password.length < 6) {
+        throw Exception('Password must be at least 6 characters');
+      }
+
+      // Sign up with Supabase
+      final response = await _supabase.auth.signUp(
+        email: email,
+        password: password,
+        data: {
+          'full_name': name,
+        },
+        emailRedirectTo: null, // Disable email confirmation redirect
+      );
+
+      if (response.user == null) {
+        throw Exception('Registration failed');
+      }
+
+      // Check if email confirmation is required
+      if (response.session == null) {
+        throw Exception(
+          'Please check your email to confirm your account. '
+          'If you don\'t see the email, check your spam folder or disable email confirmation in Supabase settings.',
+        );
+      }
+
+      final user = UserModel(
+        id: response.user!.id,
+        email: response.user!.email ?? email,
+        name: name,
+        createdAt: DateTime.tryParse(response.user!.createdAt),
+      );
+
+      // Save to local storage
+      await _storageService.setBool(AppConstants.keyIsLoggedIn, true);
+      await _storageService.setString(AppConstants.keyUserId, user.id);
+      await _storageService.setString(AppConstants.keyUserEmail, user.email);
+      await _storageService.setString(AppConstants.keyUserName, user.name);
+
+      return user;
+    } on AuthException catch (e) {
+      throw Exception(e.message);
+    } catch (e) {
+      throw Exception('Registration failed: ${e.toString()}');
+    }
+  }
+
+  /// Sign in with Google
+  /// Uses native Google Sign-In for mobile, OAuth for web
+  Future<UserModel> signInWithGoogle() async {
+    try {
+      // Use different methods based on platform
+      if (kIsWeb) {
+        return await _signInWithGoogleWeb();
+      } else {
+        return await _signInWithGoogleNative();
+      }
+    } on AuthException catch (e) {
+      throw Exception(e.message);
+    } catch (e) {
+      throw Exception('Google sign-in failed: ${e.toString()}');
+    }
+  }
+
+  /// Native Google Sign-In for Android/iOS
+  Future<UserModel> _signInWithGoogleNative() async {
+    // Trigger the Google Sign-In flow
+    final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+    
+    if (googleUser == null) {
+      throw Exception('Google sign-in cancelled');
     }
 
-    if (!email.contains('@')) {
-      throw Exception('Invalid email format');
+    // Get Google authentication tokens
+    final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+
+    final accessToken = googleAuth.accessToken;
+    final idToken = googleAuth.idToken;
+
+    if (accessToken == null || idToken == null) {
+      throw Exception('Failed to get Google authentication tokens');
     }
 
-    if (password.length < 6) {
-      throw Exception('Password must be at least 6 characters');
-    }
-
-    // Create user (in production, this would come from your backend)
-    final user = UserModel(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      email: email,
-      name: name,
-      createdAt: DateTime.now(),
+    // Sign in to Supabase with Google ID token
+    final response = await _supabase.auth.signInWithIdToken(
+      provider: OAuthProvider.google,
+      idToken: idToken,
+      accessToken: accessToken,
     );
 
-    // Save to storage
-    await _storageService.setBool(AppConstants.keyIsLoggedIn, true);
-    await _storageService.setString(AppConstants.keyUserId, user.id);
-    await _storageService.setString(AppConstants.keyUserEmail, user.email);
-    await _storageService.setString(AppConstants.keyUserName, user.name);
+    if (response.user == null) {
+      throw Exception('Failed to authenticate with Supabase');
+    }
 
-    return user;
+    final userModel = UserModel(
+      id: response.user!.id,
+      email: response.user!.email ?? googleUser.email,
+      name: response.user!.userMetadata?['full_name'] ?? 
+            response.user!.userMetadata?['name'] ?? 
+            googleUser.displayName ?? 
+            googleUser.email.split('@')[0],
+      avatarUrl: response.user!.userMetadata?['avatar_url'] ?? 
+                 response.user!.userMetadata?['picture'] ?? 
+                 googleUser.photoUrl,
+      createdAt: DateTime.tryParse(response.user!.createdAt),
+    );
+
+    // Save to local storage
+    await _storageService.setBool(AppConstants.keyIsLoggedIn, true);
+    await _storageService.setString(AppConstants.keyUserId, userModel.id);
+    await _storageService.setString(AppConstants.keyUserEmail, userModel.email);
+    await _storageService.setString(AppConstants.keyUserName, userModel.name);
+
+    return userModel;
+  }
+
+  /// Web OAuth Google Sign-In
+  Future<UserModel> _signInWithGoogleWeb() async {
+    // Use Supabase's OAuth flow for web
+    final response = await _supabase.auth.signInWithOAuth(
+      OAuthProvider.google,
+      redirectTo: null,
+    );
+
+    if (!response) {
+      throw Exception('Google sign-in cancelled or failed');
+    }
+
+    // Wait for auth state to update
+    await Future.delayed(const Duration(milliseconds: 500));
+
+    final user = _supabase.auth.currentUser;
+    
+    if (user == null) {
+      throw Exception('Google sign-in failed - no user returned');
+    }
+
+    final userModel = UserModel(
+      id: user.id,
+      email: user.email ?? '',
+      name: user.userMetadata?['full_name'] ?? 
+            user.userMetadata?['name'] ?? 
+            user.email?.split('@')[0] ?? 
+            'User',
+      avatarUrl: user.userMetadata?['avatar_url'] ?? 
+                 user.userMetadata?['picture'],
+      createdAt: DateTime.tryParse(user.createdAt),
+    );
+
+    // Save to local storage
+    await _storageService.setBool(AppConstants.keyIsLoggedIn, true);
+    await _storageService.setString(AppConstants.keyUserId, userModel.id);
+    await _storageService.setString(AppConstants.keyUserEmail, userModel.email);
+    await _storageService.setString(AppConstants.keyUserName, userModel.name);
+
+    return userModel;
   }
 
   /// Logout current user
   Future<void> logout() async {
-    await _storageService.remove(AppConstants.keyIsLoggedIn);
-    await _storageService.remove(AppConstants.keyUserId);
-    await _storageService.remove(AppConstants.keyUserEmail);
-    await _storageService.remove(AppConstants.keyUserName);
+    try {
+      // Sign out from Google (native only)
+      if (!kIsWeb) {
+        await _googleSignIn.signOut();
+      }
+      
+      // Sign out from Supabase
+      await _supabase.auth.signOut();
+      
+      // Clear local storage
+      await _storageService.remove(AppConstants.keyIsLoggedIn);
+      await _storageService.remove(AppConstants.keyUserId);
+      await _storageService.remove(AppConstants.keyUserEmail);
+      await _storageService.remove(AppConstants.keyUserName);
+    } catch (e) {
+      throw Exception('Logout failed: ${e.toString()}');
+    }
   }
 }

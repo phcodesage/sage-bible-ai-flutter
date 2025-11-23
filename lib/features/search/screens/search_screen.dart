@@ -143,7 +143,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
           Container(
             padding: const EdgeInsets.all(AppConstants.paddingMedium),
             decoration: BoxDecoration(
-              color: AppTheme.surfaceColor,
+              color: Theme.of(context).colorScheme.surface,
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withOpacity(0.05),
@@ -176,7 +176,9 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                       borderRadius: BorderRadius.circular(AppConstants.radiusMedium),
                     ),
                     filled: true,
-                    fillColor: Colors.white,
+                    fillColor: Theme.of(context).brightness == Brightness.dark
+                        ? Theme.of(context).colorScheme.surface.withOpacity(0.5)
+                        : Colors.white,
                   ),
                   onSubmitted: _performSearch,
                   onChanged: (value) {
@@ -189,7 +191,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                     Icon(
                       Icons.info_outline,
                       size: 14,
-                      color: AppTheme.textSecondary,
+                      color: Theme.of(context).textTheme.bodySmall?.color,
                     ),
                     const SizedBox(width: 4),
                     Expanded(
@@ -197,7 +199,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                         'Searching in ${currentTranslation.label}',
                         style: TextStyle(
                           fontSize: 12,
-                          color: AppTheme.textSecondary,
+                          color: Theme.of(context).textTheme.bodySmall?.color,
                         ),
                       ),
                     ),
@@ -529,7 +531,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: AppTheme.primaryColor,
+                      color: Theme.of(context).colorScheme.primary,
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(
@@ -545,7 +547,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                   Icon(
                     Icons.arrow_forward_ios,
                     size: 16,
-                    color: AppTheme.textSecondary,
+                    color: Theme.of(context).textTheme.bodySmall?.color,
                   ),
                 ],
               ),
@@ -570,7 +572,10 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
 
   List<TextSpan> _buildHighlightedText(String text, String query) {
     if (query.isEmpty) {
-      return [TextSpan(text: text)];
+      return [TextSpan(
+        text: text,
+        style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color),
+      )];
     }
 
     final spans = <TextSpan>[];
@@ -584,7 +589,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
         if (start < text.length) {
           spans.add(TextSpan(
             text: text.substring(start),
-            style: TextStyle(color: AppTheme.textPrimary),
+            style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color),
           ));
         }
         break;
@@ -594,7 +599,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
       if (index > start) {
         spans.add(TextSpan(
           text: text.substring(start, index),
-          style: TextStyle(color: AppTheme.textPrimary),
+          style: TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color),
         ));
       }
 
@@ -602,9 +607,9 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
       spans.add(TextSpan(
         text: text.substring(index, index + query.length),
         style: TextStyle(
-          backgroundColor: AppTheme.accentColor.withOpacity(0.3),
+          backgroundColor: Theme.of(context).colorScheme.tertiary.withOpacity(0.3),
           fontWeight: FontWeight.bold,
-          color: AppTheme.primaryColor,
+          color: Theme.of(context).colorScheme.primary,
         ),
       ));
 

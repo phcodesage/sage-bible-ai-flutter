@@ -1,15 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:sagebible/core/config/supabase_config.dart';
 import 'package:sagebible/core/providers/theme_provider.dart';
 import 'package:sagebible/core/router/app_router.dart';
 import 'package:sagebible/core/services/storage_service.dart';
+import 'package:sagebible/core/services/supabase_service.dart';
 import 'package:sagebible/core/theme/app_theme.dart';
 import 'package:sagebible/features/auth/providers/auth_provider.dart';
 
 /// Main Entry Point
 /// 
 /// Initializes the app with:
+/// - Supabase for backend services
 /// - Riverpod for state management
 /// - StorageService for local persistence
 /// - GoRouter for navigation
@@ -17,6 +20,20 @@ import 'package:sagebible/features/auth/providers/auth_provider.dart';
 void main() async {
   // Ensure Flutter bindings are initialized
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize Supabase
+  if (SupabaseConfig.isConfigured) {
+    await SupabaseService.initialize(
+      url: SupabaseConfig.supabaseUrl,
+      anonKey: SupabaseConfig.supabaseAnonKey,
+    );
+  } else {
+    // Show warning if Supabase is not configured
+    debugPrint(
+      '⚠️ WARNING: Supabase is not configured. '
+      'Please update lib/core/config/supabase_config.dart with your credentials.',
+    );
+  }
 
   // Initialize StorageService
   final storageService = await StorageService.getInstance();

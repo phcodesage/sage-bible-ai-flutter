@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sagebible/core/theme/app_theme.dart';
 import 'package:sagebible/features/auth/providers/auth_provider.dart';
+import 'package:sagebible/features/daily_verse/screens/daily_verse_screen.dart';
 import 'package:sagebible/features/bible/screens/bible_books_screen.dart';
 import 'package:sagebible/features/bookmarks/screens/bookmarks_screen.dart';
 import 'package:sagebible/features/search/screens/search_screen.dart';
@@ -10,7 +11,8 @@ import 'package:sagebible/features/profile/screens/profile_screen.dart';
 
 /// Main Navigation Screen
 /// 
-/// Bottom navigation with 5 tabs:
+/// Bottom navigation with 6 tabs:
+/// - Daily Verse
 /// - Read Bible
 /// - Search
 /// - Bookmarks
@@ -28,6 +30,7 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
 
   // Navigation screens
   final List<Widget> _screens = const [
+    DailyVerseScreen(),
     BibleBooksScreen(),
     SearchScreen(),
     BookmarksScreen(),
@@ -48,8 +51,8 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
       bottomNavigationBar: NavigationBar(
         selectedIndex: _currentIndex,
         onDestinationSelected: (index) {
-          // Check if trying to access AI without login (AI is now at index 3)
-          if (index == 3 && !isAuthenticated) {
+          // Check if trying to access AI without login (AI is now at index 4)
+          if (index == 4 && !isAuthenticated) {
             _showLoginRequiredDialog();
             return;
           }
@@ -59,6 +62,11 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
           });
         },
         destinations: [
+          const NavigationDestination(
+            icon: Icon(Icons.auto_awesome_outlined),
+            selectedIcon: Icon(Icons.auto_awesome),
+            label: 'Daily',
+          ),
           const NavigationDestination(
             icon: Icon(Icons.menu_book_outlined),
             selectedIcon: Icon(Icons.menu_book_rounded),

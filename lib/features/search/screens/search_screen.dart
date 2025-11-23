@@ -6,6 +6,7 @@ import 'package:sagebible/features/bible/models/bible_models.dart';
 import 'package:sagebible/features/bible/providers/bible_provider.dart';
 import 'package:sagebible/features/bible/services/bible_repository.dart';
 import 'package:sagebible/features/bible/screens/bible_reader_screen.dart';
+import 'package:sagebible/features/search/providers/search_history_provider.dart';
 
 /// Search Screen
 /// 
@@ -49,6 +50,9 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
 
     try {
       final results = ref.read(bibleProvider.notifier).search(query);
+      
+      // Add to search history
+      await ref.read(searchHistoryProvider.notifier).addSearch(query);
       
       if (mounted) {
         setState(() {
@@ -227,45 +231,122 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     }
 
     if (_lastQuery.isEmpty) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(AppConstants.paddingLarge),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.search,
-                size: 80,
-                color: AppTheme.textLight,
+      final recentSearches = ref.watch(searchHistoryProvider);
+      
+      return SingleChildScrollView(
+        padding: const EdgeInsets.all(AppConstants.paddingLarge),
+        child: Column(
+          children: [
+            Icon(
+              Icons.search,
+              size: 80,
+              color: AppTheme.textLight,
+            ),
+            const SizedBox(height: 24),
+            Text(
+              'Search the Bible',
+              style: Theme.of(context).textTheme.headlineSmall,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Enter a word or phrase to find verses',
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: AppTheme.textSecondary,
               ),
-              const SizedBox(height: 24),
-              Text(
-                'Search the Bible',
-                style: Theme.of(context).textTheme.headlineSmall,
+            ),
+            
+            // Recent searches
+            if (recentSearches.isNotEmpty) ...[
+              const SizedBox(height: 32),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Recent Searches',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: () async {
+                      final confirm = await showDialog<bool>(
+                        context: context,
+                        builder: (context) => AlertDialog(
+                          title: const Text('Clear History'),
+                          content: const Text('Clear all recent searches?'),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(context, false),
+                              child: const Text('Cancel'),
+                            ),
+                            TextButton(
+                              onPressed: () => Navigator.pop(context, true),
+                              child: const Text('Clear'),
+                            ),
+                          ],
+                        ),
+                      );
+                      
+                      if (confirm == true) {
+                        await ref.read(searchHistoryProvider.notifier).clearHistory();
+                      }
+                    },
+                    child: const Text('Clear'),
+                  ),
+                ],
               ),
-              const SizedBox(height: 8),
-              Text(
-                'Enter a word or phrase to find verses',
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: AppTheme.textSecondary,
-                ),
-              ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 12),
               Wrap(
                 spacing: 8,
                 runSpacing: 8,
-                alignment: WrapAlignment.center,
-                children: [
-                  _buildSuggestionChip('love'),
-                  _buildSuggestionChip('faith'),
-                  _buildSuggestionChip('hope'),
-                  _buildSuggestionChip('peace'),
-                  _buildSuggestionChip('joy'),
-                ],
+                children: recentSearches.map((search) {
+                  return InputChip(
+                    avatar: const Icon(Icons.history, size: 18),
+                    label: Text(search),
+                    deleteIcon: const Icon(Icons.close, size: 18),
+                    onPressed: () {
+                      _searchController.text = search;
+                      _performSearch(search);
+                    },
+                    onDeleted: () {
+                      ref.read(searchHistoryProvider.notifier).removeSearch(search);
+                    },
+                    backgroundColor: AppTheme.primaryColor.withOpacity(0.1),
+                    side: BorderSide(
+                      color: AppTheme.primaryColor.withOpacity(0.3),
+                    ),
+                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  );
+                }).toList(),
               ),
             ],
-          ),
+            
+            // Suggestions
+            const SizedBox(height: 32),
+            Text(
+              'Popular Searches',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              alignment: WrapAlignment.center,
+              children: [
+                _buildSuggestionChip('love'),
+                _buildSuggestionChip('faith'),
+                _buildSuggestionChip('hope'),
+                _buildSuggestionChip('peace'),
+                _buildSuggestionChip('joy'),
+                _buildSuggestionChip('prayer'),
+                _buildSuggestionChip('forgiveness'),
+                _buildSuggestionChip('grace'),
+              ],
+            ),
+          ],
         ),
       );
     }

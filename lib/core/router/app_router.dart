@@ -5,7 +5,7 @@ import 'package:sagebible/features/splash/screens/splash_screen.dart';
 import 'package:sagebible/features/onboarding/screens/onboarding_screen.dart';
 import 'package:sagebible/features/auth/screens/login_screen.dart';
 import 'package:sagebible/features/auth/screens/register_screen.dart';
-import 'package:sagebible/features/home/screens/home_screen.dart';
+import 'package:sagebible/features/navigation/screens/main_navigation_screen.dart';
 
 /// App Router Configuration
 /// 
@@ -79,7 +79,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         name: 'home',
         pageBuilder: (context, state) => CustomTransitionPage(
           key: state.pageKey,
-          child: const HomeScreen(),
+          child: const MainNavigationScreen(),
           transitionsBuilder: (context, animation, secondaryAnimation, child) {
             return FadeTransition(
               opacity: animation,

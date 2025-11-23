@@ -76,7 +76,15 @@ class _BibleReaderScreenState extends ConsumerState<BibleReaderScreen> {
   @override
   void dispose() {
     _scrollController.dispose();
+    _verseKeys.clear();
     super.dispose();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Clear verse keys when theme changes to avoid GlobalKey errors
+    _verseKeys.clear();
   }
 
   void _scrollToTop() {

@@ -321,6 +321,11 @@ class AppTheme {
           fontWeight: FontWeight.normal,
           color: darkTextSecondary,
         ),
+        labelLarge: GoogleFonts.lato(
+          fontSize: 14,
+          fontWeight: FontWeight.w600,
+          color: darkTextPrimary,
+        ),
       ),
       
       // Navigation Bar Theme

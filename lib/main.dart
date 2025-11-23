@@ -71,17 +71,23 @@ class SageBibleApp extends ConsumerWidget {
       title: 'SageBible',
       debugShowCheckedModeBanner: false,
 
-      // Theme
+      // Theme - disable animations to prevent interpolation errors
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
       themeMode: themeMode,
+      themeAnimationDuration: Duration.zero, // Instant theme switch
+      themeAnimationCurve: Curves.linear,
 
       // Router Configuration
       routerConfig: router,
 
       // Builder for additional configuration
       builder: (context, child) {
-        return child ?? const SizedBox.shrink();
+        // Wrap in MediaQuery to prevent text style inheritance issues
+        return MediaQuery(
+          data: MediaQuery.of(context),
+          child: child ?? const SizedBox.shrink(),
+        );
       },
     );
   }

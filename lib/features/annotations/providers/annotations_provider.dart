@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sagebible/features/annotations/models/annotation_models.dart';
 import 'package:sagebible/features/annotations/services/annotations_storage_service.dart';
+import 'package:sagebible/features/annotations/services/annotations_sync_service.dart';
 import 'package:sagebible/features/auth/providers/auth_provider.dart';
 
 /// Annotations State
@@ -35,9 +36,16 @@ class AnnotationsState {
 /// Annotations Notifier
 class AnnotationsNotifier extends StateNotifier<AnnotationsState> {
   final AnnotationsStorageService _storage;
+  final AnnotationsSyncService _syncService;
+  String? _userId;
 
-  AnnotationsNotifier(this._storage) : super(const AnnotationsState()) {
+  AnnotationsNotifier(this._storage, this._syncService) : super(const AnnotationsState()) {
     _loadAll();
+  }
+
+  /// Set current user ID
+  void setUserId(String? userId) {
+    _userId = userId;
   }
 
   /// Load all annotations from storage
@@ -77,12 +85,26 @@ class AnnotationsNotifier extends StateNotifier<AnnotationsState> {
     
     await _storage.addBookmark(bookmark);
     await _loadAll();
+
+    if (_userId != null) {
+      await syncWithCloud(_userId!);
+    }
   }
 
   /// Remove bookmark
   Future<void> removeBookmark(VerseReference reference) async {
     await _storage.removeBookmark(reference);
     await _loadAll();
+
+    if (_userId != null) {
+      // For removal, we need to handle it in sync service or just sync
+      // Note: Current syncAll implementation upserts local to remote.
+      // It does NOT delete remote if missing local.
+      // So simple syncAll won't work for deletion!
+      // We need specific delete method in SyncService.
+      await _syncService.deleteBookmark(_userId!, reference);
+      await syncWithCloud(_userId!);
+    }
   }
 
   /// Check if bookmarked
@@ -102,12 +124,21 @@ class AnnotationsNotifier extends StateNotifier<AnnotationsState> {
     
     await _storage.addHighlight(highlight);
     await _loadAll();
+
+    if (_userId != null) {
+      await syncWithCloud(_userId!);
+    }
   }
 
   /// Remove highlight
   Future<void> removeHighlight(VerseReference reference) async {
     await _storage.removeHighlight(reference);
     await _loadAll();
+
+    if (_userId != null) {
+      await _syncService.deleteHighlight(_userId!, reference);
+      await syncWithCloud(_userId!);
+    }
   }
 
   /// Get highlight for verse
@@ -136,12 +167,21 @@ class AnnotationsNotifier extends StateNotifier<AnnotationsState> {
     
     await _storage.addNote(note);
     await _loadAll();
+
+    if (_userId != null) {
+      await syncWithCloud(_userId!);
+    }
   }
 
   /// Remove note
   Future<void> removeNote(VerseReference reference) async {
     await _storage.removeNote(reference);
     await _loadAll();
+
+    if (_userId != null) {
+      await _syncService.deleteNote(_userId!, reference);
+      await syncWithCloud(_userId!);
+    }
   }
 
   /// Get note for verse
@@ -160,6 +200,21 @@ class AnnotationsNotifier extends StateNotifier<AnnotationsState> {
     await _storage.clearAll();
     await _loadAll();
   }
+
+  /// Sync with cloud
+  Future<void> syncWithCloud(String userId) async {
+    print('DEBUG: AnnotationsNotifier.syncWithCloud called for user $userId');
+    state = state.copyWith(isLoading: true);
+    try {
+      await _syncService.syncAll(userId);
+      await _loadAll();
+      print('DEBUG: AnnotationsNotifier.syncWithCloud completed');
+    } catch (e) {
+      // Handle error silently or expose via state if needed
+      print('DEBUG: Sync error in Notifier: $e');
+      state = state.copyWith(isLoading: false);
+    }
+  }
 }
 
 /// Provider for AnnotationsStorageService
@@ -168,10 +223,50 @@ final annotationsStorageServiceProvider = Provider<AnnotationsStorageService>((r
   return AnnotationsStorageService(storageService.prefs);
 });
 
+/// Provider for AnnotationsSyncService
+final annotationsSyncServiceProvider = Provider<AnnotationsSyncService>((ref) {
+  final storage = ref.watch(annotationsStorageServiceProvider);
+  return AnnotationsSyncService(storage);
+});
+
 /// Provider for AnnotationsNotifier
 final annotationsProvider = StateNotifierProvider<AnnotationsNotifier, AnnotationsState>((ref) {
+  print('DEBUG: annotationsProvider initialized');
   final storage = ref.watch(annotationsStorageServiceProvider);
-  return AnnotationsNotifier(storage);
+  final syncService = ref.watch(annotationsSyncServiceProvider);
+  
+  final notifier = AnnotationsNotifier(storage, syncService);
+
+  // Listen for auth state changes
+  ref.listen<AuthState>(authProvider, (previous, next) {
+    print('DEBUG: Auth state changed. Previous: ${previous?.isAuthenticated}, Next: ${next.isAuthenticated}');
+    
+    // Update user ID in notifier
+    notifier.setUserId(next.user?.id);
+
+    // User logged in
+    if (previous?.isAuthenticated == false && next.isAuthenticated && next.user != null) {
+      print('DEBUG: Triggering sync from listener');
+      notifier.syncWithCloud(next.user!.id);
+    }
+    
+    // User logged out
+    if (previous?.isAuthenticated == true && !next.isAuthenticated) {
+      print('DEBUG: Clearing annotations from listener');
+      notifier.clearAll();
+    }
+  });
+
+  // Handle initial state (if already logged in when provider is created)
+  final authState = ref.read(authProvider);
+  print('DEBUG: Initial auth state: ${authState.isAuthenticated}');
+  if (authState.isAuthenticated && authState.user != null) {
+    notifier.setUserId(authState.user!.id);
+    print('DEBUG: Triggering initial sync');
+    Future.microtask(() => notifier.syncWithCloud(authState.user!.id));
+  }
+
+  return notifier;
 });
 
 /// Convenience provider for bookmarks list

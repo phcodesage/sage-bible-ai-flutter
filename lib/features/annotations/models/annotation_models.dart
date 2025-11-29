@@ -7,11 +7,13 @@ class VerseReference {
   final String bookName;
   final int chapter;
   final int verse;
+  final String translation;
 
   VerseReference({
     required this.bookName,
     required this.chapter,
     required this.verse,
+    this.translation = 'KJV',
   });
 
   /// Create unique ID for this verse
@@ -26,6 +28,7 @@ class VerseReference {
       'bookName': bookName,
       'chapter': chapter,
       'verse': verse,
+      'translation': translation,
     };
   }
 
@@ -35,6 +38,7 @@ class VerseReference {
       bookName: json['bookName'] as String,
       chapter: json['chapter'] as int,
       verse: json['verse'] as int,
+      translation: json['translation'] as String? ?? 'KJV',
     );
   }
 
@@ -45,10 +49,15 @@ class VerseReference {
           runtimeType == other.runtimeType &&
           bookName == other.bookName &&
           chapter == other.chapter &&
-          verse == other.verse;
+          verse == other.verse &&
+          translation == other.translation;
 
   @override
-  int get hashCode => bookName.hashCode ^ chapter.hashCode ^ verse.hashCode;
+  int get hashCode => 
+      bookName.hashCode ^ 
+      chapter.hashCode ^ 
+      verse.hashCode ^ 
+      translation.hashCode;
 }
 
 /// Bookmark

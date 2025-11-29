@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sagebible/core/constants/app_constants.dart';
-import 'package:sagebible/core/theme/app_theme.dart';
+import 'package:sagebible/core/utils/bible_reference_parser.dart';
+import 'package:sagebible/features/ai/models/chat_message.dart';
+import 'package:sagebible/features/ai/providers/ai_provider.dart';
 import 'package:sagebible/features/auth/providers/auth_provider.dart';
+import 'package:sagebible/features/bible/screens/bible_reader_screen.dart';
 
 /// AI Assistant Screen
 /// 
@@ -17,47 +21,66 @@ class AIAssistantScreen extends ConsumerStatefulWidget {
 
 class _AIAssistantScreenState extends ConsumerState<AIAssistantScreen> {
   final TextEditingController _messageController = TextEditingController();
-  final List<ChatMessage> _messages = [];
+  final ScrollController _scrollController = ScrollController();
 
   @override
   void dispose() {
     _messageController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
   void _sendMessage() {
     if (_messageController.text.trim().isEmpty) return;
 
-    setState(() {
-      _messages.add(ChatMessage(
-        text: _messageController.text,
-        isUser: true,
-      ));
-      _messageController.clear();
-    });
+    final message = _messageController.text;
+    _messageController.clear();
+    
+    // Dismiss keyboard
+    FocusScope.of(context).unfocus();
 
-    // Simulate AI response
-    Future.delayed(const Duration(seconds: 1), () {
-      if (mounted) {
-        setState(() {
-          _messages.add(ChatMessage(
-            text: 'AI Assistant feature coming soon! This will help you understand Bible verses, answer questions, and provide spiritual guidance.',
-            isUser: false,
-          ));
-        });
-      }
-    });
+    final userId = ref.read(authProvider).user?.id;
+    if (userId != null) {
+      ref.read(aiProvider.notifier).sendMessage(userId, message);
+    }
+  }
+
+  void _scrollToBottom() {
+    if (_scrollController.hasClients) {
+      _scrollController.animateTo(
+        _scrollController.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authProvider);
+    final aiState = ref.watch(aiProvider);
     final user = authState.user;
+    final messages = aiState.messages;
+
+    // Scroll to bottom when messages change
+    ref.listen(aiProvider, (previous, next) {
+      if (next.messages.length > (previous?.messages.length ?? 0)) {
+        // Wait for list to build
+        Future.delayed(const Duration(milliseconds: 100), _scrollToBottom);
+      }
+    });
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('AI Assistant'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.delete_outline),
+            onPressed: () {
+              ref.read(aiProvider.notifier).clearChat();
+            },
+            tooltip: 'Clear Chat',
+          ),
           IconButton(
             icon: const Icon(Icons.info_outline),
             onPressed: () {
@@ -83,10 +106,10 @@ class _AIAssistantScreenState extends ConsumerState<AIAssistantScreen> {
       body: Column(
         children: [
           // Welcome message
-          if (_messages.isEmpty)
+          if (messages.isEmpty)
             Expanded(
               child: Center(
-                child: Padding(
+                child: SingleChildScrollView(
                   padding: const EdgeInsets.all(AppConstants.paddingLarge),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -129,11 +152,43 @@ class _AIAssistantScreenState extends ConsumerState<AIAssistantScreen> {
             // Messages list
             Expanded(
               child: ListView.builder(
+                controller: _scrollController,
                 padding: const EdgeInsets.all(AppConstants.paddingMedium),
-                itemCount: _messages.length,
+                itemCount: messages.length + (aiState.isLoading ? 1 : 0),
                 itemBuilder: (context, index) {
-                  return _buildMessageBubble(_messages[index]);
+                  if (index == messages.length) {
+                    return const Padding(
+                      padding: EdgeInsets.all(8.0),
+                      child: Center(child: CircularProgressIndicator()),
+                    );
+                  }
+                  return _buildMessageBubble(messages[index]);
                 },
+              ),
+            ),
+
+          // Error message
+          if (aiState.error != null)
+            Container(
+              padding: const EdgeInsets.all(8),
+              color: Colors.red.withOpacity(0.1),
+              child: Row(
+                children: [
+                  const Icon(Icons.error_outline, color: Colors.red),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      aiState.error!,
+                      style: const TextStyle(color: Colors.red),
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close, color: Colors.red),
+                    onPressed: () {
+                      // Clear error (would need a method in notifier, or just ignore)
+                    },
+                  ),
+                ],
               ),
             ),
 
@@ -155,6 +210,9 @@ class _AIAssistantScreenState extends ConsumerState<AIAssistantScreen> {
                 Expanded(
                   child: TextField(
                     controller: _messageController,
+                    enabled: !aiState.isLoading,
+                    minLines: 1,
+                    maxLines: 3,
                     style: TextStyle(
                       color: Theme.of(context).textTheme.bodyLarge?.color,
                     ),
@@ -181,7 +239,7 @@ class _AIAssistantScreenState extends ConsumerState<AIAssistantScreen> {
                 ),
                 const SizedBox(width: 8),
                 FloatingActionButton(
-                  onPressed: _sendMessage,
+                  onPressed: aiState.isLoading ? null : _sendMessage,
                   mini: true,
                   child: const Icon(Icons.send),
                 ),
@@ -203,6 +261,7 @@ class _AIAssistantScreenState extends ConsumerState<AIAssistantScreen> {
     );
   }
 
+
   Widget _buildMessageBubble(ChatMessage message) {
     return Align(
       alignment: message.isUser ? Alignment.centerRight : Alignment.centerLeft,
@@ -220,22 +279,78 @@ class _AIAssistantScreenState extends ConsumerState<AIAssistantScreen> {
                   : Colors.grey[200],
           borderRadius: BorderRadius.circular(AppConstants.radiusMedium),
         ),
-        child: Text(
-          message.text,
-          style: TextStyle(
-            color: message.isUser 
-                ? Colors.white 
-                : Theme.of(context).textTheme.bodyLarge?.color,
-          ),
-        ),
+        child: message.isUser
+            ? Text(
+                message.text,
+                style: const TextStyle(color: Colors.white),
+              )
+            : _buildClickableText(message.text),
       ),
     );
   }
-}
 
-class ChatMessage {
-  final String text;
-  final bool isUser;
+  Widget _buildClickableText(String text) {
+    final matches = BibleReferenceParser.parse(text);
+    if (matches.isEmpty) {
+      return Text(
+        text,
+        style: TextStyle(
+          color: Theme.of(context).textTheme.bodyLarge?.color,
+        ),
+      );
+    }
 
-  ChatMessage({required this.text, required this.isUser});
+    final spans = <InlineSpan>[];
+    int lastIndex = 0;
+
+    for (final match in matches) {
+      // Add text before match
+      if (match.start > lastIndex) {
+        spans.add(TextSpan(
+          text: text.substring(lastIndex, match.start),
+          style: TextStyle(
+            color: Theme.of(context).textTheme.bodyLarge?.color,
+          ),
+        ));
+      }
+
+      // Add clickable match
+      spans.add(TextSpan(
+        text: match.text,
+        style: TextStyle(
+          color: Theme.of(context).colorScheme.primary,
+          fontWeight: FontWeight.bold,
+          decoration: TextDecoration.underline,
+        ),
+        recognizer: TapGestureRecognizer()
+          ..onTap = () {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) => BibleReaderScreen(
+                  bookName: match.book,
+                  chapterNumber: match.chapter,
+                  highlightVerse: match.verse,
+                ),
+              ),
+            );
+          },
+      ));
+
+      lastIndex = match.end;
+    }
+
+    // Add remaining text
+    if (lastIndex < text.length) {
+      spans.add(TextSpan(
+        text: text.substring(lastIndex),
+        style: TextStyle(
+          color: Theme.of(context).textTheme.bodyLarge?.color,
+        ),
+      ));
+    }
+
+    return RichText(
+      text: TextSpan(children: spans),
+    );
+  }
 }

@@ -58,6 +58,7 @@ dependencies:
   
   # Supabase - Backend as a Service
   supabase_flutter: ^2.8.0
+  http: ^1.6.0
 
 dev_dependencies:
   flutter_test:
